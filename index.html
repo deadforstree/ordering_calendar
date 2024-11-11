@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>График бронирования транспорта</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafcff;
+        }
+
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+            background-color: #fff;
+        }
+
+        .header {
+            width: 1200px;
+            display: flex;
+            font-weight: bold;
+        }
+
+        .cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 10px;
+            background-color: #f0fff3;
+            border: 1px solid #24b06a;
+            text-align: center;
+        }
+
+        .time__active {
+            width: 50px;
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 2px solid #24b06a;
+            transition: border-color 0.3s;
+        }
+
+        .time__inactive {
+            width: 50px;
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #D3D3D3;
+            transition: border-color 0.3s;
+        }
+
+        .time__waiting {
+            width: 50px;
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #FF3A3F;
+            transition: border-color 0.3s;
+        }
+
+        .time__maintenance {
+            width: 50px;
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #9F3ED5;
+            transition: border-color 0.3s;
+        }
+
+        @media (hover:hover) {
+            .time__inactive:hover {
+                border-color: black;
+                background-color: #24b06a;
+                cursor: pointer;
+            }
+
+            .time__waiting:hover {
+                border-color: black;
+                background-color: #24b06a;
+                cursor: pointer;
+            }
+
+            .time__maintenance:hover {
+                border-color: black;
+                background-color: #9F3ED5;
+                cursor: pointer;
+            }
+
+            .close__popup:hover {
+                border-color: black;
+                background-color: #24b06a;
+                cursor: pointer;
+            }
+        }
+
+        @media (hover:none) {
+            .time__inactive:active {
+                border-color: black;
+                background-color: #24b06a;
+                cursor: pointer;
+            }
+
+            .time__waiting:active {
+                border-color: black;
+                background-color: #24b06a;
+                cursor: pointer;
+            }
+
+            .time__maintenance:active {
+                border-color: black;
+                background-color: #9F3ED5;
+                cursor: pointer;
+            }
+
+            .close__popup:active {
+                border-color: black;
+                background-color: #24b06a;
+            }
+        }
+
+        .row {
+            width: 1200px;
+            display: flex;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #f0fff3;
+            border: 2px solid #24b06a;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .close__popup {
+            width: 250px;
+            height: 30px;
+            margin: 10px auto 0px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0fff3;
+            border-radius: 5px;
+            border: 2px solid #24b06a;
+
+        }
+
+        .button {
+            color: black;
+        }
+
+        .freeTimeSelect {
+            background-color: #f0fff3;
+            border-radius: 5px;
+            border: 2px solid #24b06a;
+        }
+    </style>
+</head>
+
+<body>
+    <form name="postForm" method="post" onsubmit="return OnSubmitForm();" enctype="multipart/form-data">
+        <div class="overlay" id="overlay"></div>
+        <div class="popup" id="popup">
+            <h2>Информация о резервации</h2>
+            <p id="reservationInfo"></p>
+
+            <input id="closePopup" class="close__popup" type="button" value="Закрыть">
+        </div>
+
+        <div class="container" id="reservationContainer">
+            <div class="header">
+            </div>
+        </div>
+    </form>
+    <input type="hidden" id="data" name="data" value="{{ data }}" readonly>
+
+    <script>
+        const data = [
+            {
+                "pk": 1,
+                "car": "Валдай",
+                "reservations": [
+                    {
+                        "date": "20.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "09:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            },
+                            {
+                                "time": "10:00",
+                            },
+                            {
+                                "time": "11:00",
+                                "description": {
+                                    "direction": "Бараки-Заречная",
+                                    "cargo": "Фанера",
+                                    "weight": 121,
+                                    "length": 32,
+                                    "width": 32,
+                                    "height": 32
+                                }
+                            },
+                            {
+                                "time": "12:00",
+                            },
+                            {
+                                "time": "13:00",
+                            },
+                            {
+                                "time": "14:00",
+                            },
+                            {
+                                "time": "15:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            },
+                        ]
+                    },
+                    {
+                        "date": "21.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "10:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "date": "22.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "23.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "24.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "25.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "26.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "10:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "pk": 2,
+                "car": "Газел",
+                "reservations": [
+                    {
+                        "date": "20.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "13:00",
+                                "description": {
+                                    "direction": "Бараки-Баракуда",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            },
+                            {
+                                "time": "18:00",
+                                "description": {
+                                    "direction": "Бараки-Владимир",
+                                    "cargo": "Фанера",
+                                    "weight": 121,
+                                    "length": 32,
+                                    "width": 32,
+                                    "height": 32
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "date": "21.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "10:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "date": "22.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "23.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "24.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "25.12.2024",
+                        "time_and_description": [
+
+                        ]
+                    },
+                    {
+                        "date": "26.12.2024",
+                        "time_and_description": [
+                            {
+                                "time": "10:00",
+                                "description": {
+                                    "direction": "Бараки-Гусь-Хрустальный",
+                                    "cargo": "ЛДСП",
+                                    "weight": 100,
+                                    "length": 3,
+                                    "width": 3,
+                                    "height": 3
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const container = document.getElementById('reservationContainer');
+
+        const button = document.getElementById("closePopup");
+        button.addEventListener("click", closePopup);
+
+        function OnSubmitForm() {
+            if (document.getElementById('form_type').value === "edit") {
+                document.postForm.action = "/transport/transport_edit";
+            } else if (document.getElementById('form_type').value === "book_maintenance") {
+                document.postForm.action = "/transport/transport_calendar/book_maintenance";
+            } else if (document.getElementById('form_type').value === "delete_maintenance") {
+                document.postForm.action = "/transport/transport_calendar/book_maintenance/delete";
+            } else {
+                document.postForm.action = "/transport/transport_calendar/approve_app";
+            }
+            return true;
+        }
+
+        // Получаем уникальные даты для заголовков
+        const dates = Array.from(new Set(data.flatMap(vehicle => vehicle.reservations.map(reservation => reservation.date))));
+
+        function formatDate(dateString) {
+            const date = new Date(dateString.split('.').reverse().join('-'));
+            const options = { weekday: 'long', day: '2-digit', month: '2-digit' };
+            return date.toLocaleDateString('ru-RU', options).replace(',', ''); // Убираем запятую
+        }
+
+        // Добавляем заголовки дат в контейнер
+        const headerRow = document.createElement('div');
+        headerRow.className = 'header';
+        const p = document.createElement('p');
+        p.textContent = 'Машина';
+        p.className = 'cell';
+        headerRow.appendChild(p)
+
+        dates.forEach(date => {
+            const th = document.createElement('div');
+            th.className = 'cell';
+            th.textContent = formatDate(date);
+            headerRow.appendChild(th);
+        });
+
+        container.appendChild(headerRow);
+
+        data.forEach(vehicle => {
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            const carCell = document.createElement('div');
+            carCell.className = 'cell';
+            carCell.textContent = vehicle.car;
+            row.appendChild(carCell);
+
+            dates.forEach(date => {
+                const dateCell = document.createElement('div');
+                dateCell.className = 'cell';
+                const reservations = vehicle.reservations.find(res => res.date === date);
+
+                if (reservations) {
+                    reservations.time_and_description.forEach(reservation => {
+                        const timeDiv = document.createElement('div');
+                        timeDiv.textContent = reservation.time;
+                        if (!reservation.description) {
+                            timeDiv.classList.add('time__active');
+                            timeDiv.onclick = () => showMaintenancePopup(vehicle.car, date, reservation.time, vehicle.pk);
+                        } else {
+                            if (reservation.description.status === 'waiting_for_expediter') {
+                                timeDiv.classList.add('time__waiting');
+                            } else if (reservation.description.status === 'maintenance') {
+                                timeDiv.classList.add('time__maintenance');
+                            } else {
+                                timeDiv.classList.add('time__inactive');
+                            }
+                            timeDiv.onclick = () => showPopup(reservation.description.status, reservation.description.app_pk, vehicle.car, date, reservation.time, reservation.description.direction,
+                                reservation.description.cargo, reservation.description.weight, reservation.description.length,
+                                reservation.description.width, reservation.description.height, reservation.description.creator, vehicle.pk);
+                        }
+                        dateCell.appendChild(timeDiv);
+                    });
+                }
+                row.appendChild(dateCell);
+            });
+
+            container.appendChild(row);
+        });
+
+        function showMaintenancePopup(car, date, time, car_pk) {
+            let info = `<h2>Забронировать на ТО</h2><br> Машина: ${car}<br>Дата: ${date}<br>Время: ${time}<br> <input type="hidden" id="app_car" name="app_car" value=${car_pk} readonly> <input type="hidden" id="app_date" name="app_date" value=${date} readonly> <input type="hidden" id="app_time" name="app_time" value=${time} readonly> <input type="hidden" id="form_type" name="form_type" value="book_maintenance" readonly> <input id="submitButton" class="close__popup button" type="submit" value="Забронировать">`;
+            document.getElementById('reservationInfo').innerHTML = info;
+            document.getElementById('popup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function showPopup(status, app_pk, car, date, time, direction, cargo, weight, length, width, height, creator, car_pk) {
+            let info = ``;
+            let freeTimes = getFreeTimes(date, time, car_pk);
+            let freeTimeOptions = freeTimes.length > 0 ? freeTimes.map(t => `<option value="${t}">${t}</option>`).join('') : '';
+
+            if (status === 'waiting_for_expediter') {
+                info = `№ ${app_pk}<br>Создатель: ${creator}<br>Машина: ${car}<br>Дата: ${date}<br>Время: ${time}<br>Маршрут: ${direction}<br>Груз: ${cargo}<br>
+        Вес: ${weight} кг<br>Длина: ${length}<br>Ширина: ${width}<br>Высота: ${height}<br>
+        ${freeTimes.length > 0 ? `Свободное время:<select id="freeTimeSelect">${freeTimeOptions}</select>` : ''}
+        <input type="hidden" id="app_pk" name="app_pk" value=${app_pk} readonly>
+        <input type="hidden" id="form_type" name="form_type" value="approval" readonly>
+        <input id="submitButton" class="close__popup button" type="submit" value="Подтвердить">`;
+            } else if (status === 'maintenance') {
+                info = `<h2>ТО</h2><br>Машина: ${car}<br>Дата: ${date}<br>Время: ${time}<br>
+        ${freeTimes.length > 0 ? `Свободное время:<select id="freeTimeSelect" class="freeTimeSelect">${freeTimeOptions}</select>` : ''}
+        <input type="hidden" id="app_pk" name="app_pk" value=${app_pk} readonly>
+        <input type="hidden" id="app_car" name="app_car" value=${car_pk} readonly>
+        <input type="hidden" id="app_date" name="app_date" value=${date} readonly>
+        <input type="hidden" id="app_time" name="app_time" value=${time} readonly>
+        <input type="hidden" id="form_type" name="form_type" value="delete_maintenance" readonly>
+        <input id="submitButton" class="close__popup button" type="submit" value="Удалить">`;
+            } else {
+                info = `№ ${app_pk}<br>Создатель: ${creator}<br>Машина: ${car}<br>Дата: ${date}<br>Время: ${time}<br>Маршрут: ${direction}<br>Груз: ${cargo}<br>
+        Вес: ${weight} кг<br>Длина: ${length}<br>Ширина: ${width}<br>Высота: ${height}<br>
+        ${freeTimes.length > 0 ? `Свободное время:<select id="freeTimeSelect" class="freeTimeSelect">${freeTimeOptions}</select>` : ''}
+        <input type="hidden" id="app_pk" name="app_pk" value=${app_pk} readonly>
+        <input type="hidden" id="form_type" name="form_type" value="edit" readonly>
+        <input id="submitButton" class="close__popup button" type="submit" value="Редактировать">`;
+            }
+
+            document.getElementById('reservationInfo').innerHTML = info;
+            document.getElementById('popup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+
+        function getFreeTimes(date, time, car_pk) {
+            const vehicle = data.find(v => v.pk === car_pk);
+            if (!vehicle) return [];
+
+            const dateReservations = vehicle.reservations.find(res => res.date === date);
+            if (!dateReservations) return [];
+
+            const times = dateReservations.time_and_description.map(res => res.time).sort();
+            const currentTimeIndex = times.indexOf(time);
+            let freeTimes = [];
+
+            if (currentTimeIndex !== -1) {
+                // Обходим время от следующего часа до следующего занятого
+                let currentHour = parseInt(time.split(':')[0]) + 1; // Начинаем с следующего часа
+                const nextReservedTime = times[currentTimeIndex + 1];
+
+                while (currentHour <= 24) {
+                    const formattedTime = currentHour < 10 ? `0${currentHour}:00` : `${currentHour}:00`;
+                    if (nextReservedTime && formattedTime === nextReservedTime) {
+                        break; // Если достигли следующего занятого времени, выходим из цикла
+                    }
+                    freeTimes.push(formattedTime);
+                    currentHour++;
+                }
+            }
+            return freeTimes;
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
